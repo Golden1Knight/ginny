@@ -92,14 +92,15 @@ function Show-GinnyHelp {
 🧙‍♀️ Ginny – PowerShell package wizard
 ──────────────────────────────────────
 Commands:
- ginny install <name>    -> install a package
- ginny update  <name>    -> update a package
- ginny uninstall <name>  -> remove a package
+ ginny install NAME      -> install a package
+ ginny update  NAME      -> update a package
+ ginny uninstall NAME    -> remove a package
  ginny list              -> list installed packages
  ginny help              -> show this help screen
 ──────────────────────────────────────
 "@ -ForegroundColor Magenta
 }
+
 
 function ginny {
     param (
