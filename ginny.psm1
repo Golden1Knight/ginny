@@ -87,17 +87,16 @@ function List-GinnyPackages {
         Write-Host " - $($dir.Name)" -ForegroundColor White
     }
 }
-
 function Show-GinnyHelp {
     Write-Host @"
 🧙‍♀️ Ginny – PowerShell package wizard
 ──────────────────────────────────────
 Commands:
- ginny install <name>    → install a package
- ginny update  <name>    → update a package
- ginny uninstall <name>  → remove a package
- ginny list              → list installed packages
- ginny help              → show this help screen
+ ginny install <name>    -> install a package
+ ginny update  <name>    -> update a package
+ ginny uninstall <name>  -> remove a package
+ ginny list              -> list installed packages
+ ginny help              -> show this help screen
 ──────────────────────────────────────
 "@ -ForegroundColor Magenta
 }
