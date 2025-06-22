@@ -1,1 +1,5 @@
-
+  {
+  "devTools": {
+    "repo": "https://raw.githubusercontent.com/GeckoTools/geckoC/main/gecko.psm1"
+  }
+}
