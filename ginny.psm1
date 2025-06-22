@@ -1,9 +1,5 @@
-$GinnyModulesPath = Join-Path $env:USERPROFILE "Documents\PowerShell\Modules"
-$GinnyIndexPath = Join-Path $PSScriptRoot "modules\index.json"
-
-if (-not (Test-Path $GinnyModulesPath)) {
-    New-Item -ItemType Directory -Path $GinnyModulesPath -Force | Out-Null
-}
+$GinnyModulesPath = "$env:USERPROFILE\Documents\PowerShell\Modules"
+$GinnyIndexPath = "$PSScriptRoot\modules\index.json"
 
 function Install-GinnyPackage {
     param (
@@ -11,34 +7,29 @@ function Install-GinnyPackage {
         [string]$Name
     )
 
-    if (-not (Test-Path $GinnyIndexPath)) {
+    if (-Not (Test-Path $GinnyIndexPath)) {
         Write-Error "index.json not found at $GinnyIndexPath!"
         return
     }
 
-    $index = Get-Content $GinnyIndexPath -Raw | ConvertFrom-Json
-
-    if (-not $index.PSObject.Properties.Name -contains $Name) {
+    $index = Get-Content $GinnyIndexPath | ConvertFrom-Json
+    if (-Not $index.$Name) {
         Write-Error "Package '$Name' not found in ginny index."
         return
     }
 
     $url = $index.$Name.repo
-    $moduleFolder = Join-Path $GinnyModulesPath $Name
-    $modulePath = Join-Path $moduleFolder "$Name.psm1"
+    $moduleFolder = "$GinnyModulesPath\$Name"
+    $modulePath = "$moduleFolder\$Name.psm1"
 
-    if (-not (Test-Path $moduleFolder)) {
-        New-Item -ItemType Directory -Path $moduleFolder -Force | Out-Null
-    }
-
+    New-Item -ItemType Directory -Path $moduleFolder -Force | Out-Null
     Write-Host "📥 Downloading $Name from $url..." -ForegroundColor Cyan
 
     try {
         Invoke-WebRequest -Uri $url -OutFile $modulePath -UseBasicParsing
         Write-Host "✅ Installed '$Name' to $modulePath" -ForegroundColor Green
-    }
-    catch {
-        Write-Error "❌ Failed to download or install '$Name'. $_"
+    } catch {
+        Write-Error "❌ Failed to download or install '$Name'."
     }
 }
 
@@ -58,25 +49,17 @@ function Uninstall-GinnyPackage {
         [string]$Name
     )
 
-    $path = Join-Path $GinnyModulesPath $Name
-
+    $path = "$GinnyModulesPath\$Name"
     if (Test-Path $path) {
         Remove-Item -Recurse -Force $path
         Write-Host "🗑️ Uninstalled '$Name'." -ForegroundColor Red
-    }
-    else {
+    } else {
         Write-Error "Package '$Name' is not installed."
     }
 }
 
 function List-GinnyPackages {
-    if (-not (Test-Path $GinnyModulesPath)) {
-        Write-Host "No packages installed via ginny." -ForegroundColor DarkGray
-        return
-    }
-
     $dirs = Get-ChildItem -Directory -Path $GinnyModulesPath
-
     if ($dirs.Count -eq 0) {
         Write-Host "No packages installed via ginny." -ForegroundColor DarkGray
         return
@@ -87,6 +70,7 @@ function List-GinnyPackages {
         Write-Host " - $($dir.Name)" -ForegroundColor White
     }
 }
+
 function Show-GinnyHelp {
     Write-Host @"
 🧙‍♀️ Ginny – PowerShell package wizard
@@ -101,36 +85,10 @@ Commands:
 "@ -ForegroundColor Magenta
 }
 
-
-function ginny {
-    param (
-        [Parameter(Mandatory=$true, Position=0)]
-        [ValidateSet("install", "update", "uninstall", "list", "help")]
-        [string]$Command,
-
-        [string]$Name
-    )
-
-    switch ($Command) {
-        "install"   { 
-            if (-not $Name) { Write-Error "Please specify a package name to install."; return }
-            Install-GinnyPackage -Name $Name
-        }
-        "update"    { 
-            if (-not $Name) { Write-Error "Please specify a package name to update."; return }
-            Update-GinnyPackage -Name $Name
-        }
-        "uninstall" { 
-            if (-not $Name) { Write-Error "Please specify a package name to uninstall."; return }
-            Uninstall-GinnyPackage -Name $Name
-        }
-        "list"      { List-GinnyPackages }
-        "help"      { Show-GinnyHelp }
-    }
-}
-
-# Usuwam wcześniejsze aliasy (jeśli istnieją)
-Remove-Item Alias:ginny -ErrorAction SilentlyContinue
-
-# Alias do funkcji głównej
-Set-Alias ginny ginny
+# Aliasy
+Set-Alias ginny Install-GinnyPackage
+Set-Alias ginny-install Install-GinnyPackage
+Set-Alias ginny-update Update-GinnyPackage
+Set-Alias ginny-uninstall Uninstall-GinnyPackage
+Set-Alias ginny-list List-GinnyPackages
+Set-Alias ginny-help Show-GinnyHelp
