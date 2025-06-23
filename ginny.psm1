@@ -2,10 +2,7 @@ $GinnyModulesPath = "$env:USERPROFILE\Documents\PowerShell\Modules"
 $GinnyIndexPath = "$PSScriptRoot\modules\index.json"
 
 function Install-GinnyPackage {
-    param (
-        [Parameter(Mandatory)]
-        [string]$Name
-    )
+    param ([Parameter(Mandatory)][string]$Name)
 
     if (-Not (Test-Path $GinnyIndexPath)) {
         Write-Error "index.json not found at $GinnyIndexPath!"
@@ -35,20 +32,13 @@ function Install-GinnyPackage {
 }
 
 function Update-GinnyPackage {
-    param (
-        [Parameter(Mandatory)]
-        [string]$Name
-    )
-
+    param ([Parameter(Mandatory)][string]$Name)
     Write-Host "Updating package '$Name'..." -ForegroundColor Yellow
     Install-GinnyPackage -Name $Name
 }
 
 function Uninstall-GinnyPackage {
-    param (
-        [Parameter(Mandatory)]
-        [string]$Name
-    )
+    param ([Parameter(Mandatory)][string]$Name)
 
     $path = "$GinnyModulesPath\$Name"
     if (Test-Path $path) {
@@ -72,8 +62,7 @@ function List-GinnyPackages {
         return
     }
 
-    Write-Host ""
-    Write-Host "Installed packages:" -ForegroundColor Green
+    Write-Host "`nInstalled packages:" -ForegroundColor Green
     foreach ($dir in $dirs) {
         Write-Host " - $($dir.Name)" -ForegroundColor White
     }
@@ -94,10 +83,22 @@ Commands:
     Write-Host $helpText -ForegroundColor Magenta
 }
 
-# Aliases
-Set-Alias ginny Install-GinnyPackage
-Set-Alias ginny-install Install-GinnyPackage
-Set-Alias ginny-update Update-GinnyPackage
-Set-Alias ginny-uninstall Uninstall-GinnyPackage
-Set-Alias ginny-list List-GinnyPackages
-Set-Alias ginny-help Show-GinnyHelp
+# ✨ Główna funkcja - alias: ginny
+function ginny {
+    param (
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]$Command,
+
+        [Parameter(Position = 1)]
+        [string]$Arg
+    )
+
+    switch ($Command.ToLower()) {
+        'install'   { Install-GinnyPackage -Name $Arg }
+        'update'    { Update-GinnyPackage -Name $Arg }
+        'uninstall' { Uninstall-GinnyPackage -Name $Arg }
+        'list'      { List-GinnyPackages }
+        'help'      { Show-GinnyHelp }
+        default     { Write-Error "Unknown command: $Command`nUse: ginny help" }
+    }
+}
