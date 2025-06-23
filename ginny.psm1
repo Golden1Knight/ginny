@@ -3,13 +3,15 @@ $GinnyIndexPath = "https://raw.githubusercontent.com/Golden1Knight/ginny/main/mo
 
 function Install-GinnyPackage {
     param ([Parameter(Mandatory)][string]$Name)
-
-    if (-Not (Test-Path $GinnyIndexPath)) {
-        Write-Error "index.json not found at $GinnyIndexPath!"
+    
+    try {
+        $response = Invoke-WebRequest -Uri $GinnyIndexPath -UseBasicParsing -ErrorAction Stop
+        $index = $response.Content | ConvertFrom-Json
+    } catch {
+        Write-Error "Nie udało się pobrać index.json z $GinnyIndexPath"
         return
     }
 
-    $index = Get-Content $GinnyIndexPath | ConvertFrom-Json
     if (-Not $index.$Name) {
         Write-Error "Package '$Name' not found in ginny index."
         return
