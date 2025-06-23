@@ -1,91 +1,36 @@
 $GinnyModulesPath = "$env:USERPROFILE\Documents\PowerShell\Modules"
-$GinnyIndexPath = "https://raw.githubusercontent.com/Golden1Knight/ginny/main/modules/index.json"
 
 function Install-GinnyPackage {
-    param ([Parameter(Mandatory)][string]$Name)
-    
-    try {
-        $response = Invoke-WebRequest -Uri $GinnyIndexPath -UseBasicParsing -ErrorAction Stop
-        $index = $response.Content | ConvertFrom-Json
-    } catch {
-        Write-Error "Nie udało się pobrać index.json z $GinnyIndexPath"
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Url
+    )
+
+    # Wydobądź nazwę modułu z URL (np. devTools.psm1 => devTools)
+    $fileName = [System.IO.Path]::GetFileName($Url)
+    if (-not $fileName) {
+        Write-Error "Nie można wydobyć nazwy pliku z URL."
         return
     }
+    $moduleName = $fileName -replace '\.psm1$', ''
 
-    if (-Not $index.$Name) {
-        Write-Error "Package '$Name' not found in ginny index."
-        return
-    }
+    $moduleFolder = Join-Path $GinnyModulesPath $moduleName
+    $modulePath = Join-Path $moduleFolder $fileName
 
-    $url = $index.$Name.repo
-    $moduleFolder = "$GinnyModulesPath\$Name"
-    $modulePath = "$moduleFolder\$Name.psm1"
-
+    # Utwórz folder, jeśli nie istnieje
     New-Item -ItemType Directory -Path $moduleFolder -Force | Out-Null
-    Write-Host "Downloading $Name from $url..." -ForegroundColor Cyan
+
+    Write-Host "Pobieranie modułu '$moduleName' z $Url ..." -ForegroundColor Cyan
 
     try {
-        Invoke-WebRequest -Uri $url -OutFile $modulePath -UseBasicParsing
-        Write-Host "Installed '$Name' to $modulePath" -ForegroundColor Green
+        Invoke-WebRequest -Uri $Url -OutFile $modulePath -UseBasicParsing -ErrorAction Stop
+        Write-Host "Moduł '$moduleName' został zainstalowany w $modulePath" -ForegroundColor Green
     }
     catch {
-        Write-Error "Failed to download or install '$Name'."
+        Write-Error "Błąd podczas pobierania lub instalacji modułu: $_"
     }
 }
 
-function Update-GinnyPackage {
-    param ([Parameter(Mandatory)][string]$Name)
-    Write-Host "Updating package '$Name'..." -ForegroundColor Yellow
-    Install-GinnyPackage -Name $Name
-}
-
-function Uninstall-GinnyPackage {
-    param ([Parameter(Mandatory)][string]$Name)
-
-    $path = "$GinnyModulesPath\$Name"
-    if (Test-Path $path) {
-        Remove-Item -Recurse -Force $path
-        Write-Host "Uninstalled '$Name'." -ForegroundColor Red
-    }
-    else {
-        Write-Error "Package '$Name' is not installed."
-    }
-}
-
-function List-GinnyPackages {
-    if (-Not (Test-Path $GinnyModulesPath)) {
-        Write-Host "No packages installed via ginny." -ForegroundColor DarkGray
-        return
-    }
-
-    $dirs = Get-ChildItem -Directory -Path $GinnyModulesPath
-    if ($dirs.Count -eq 0) {
-        Write-Host "No packages installed via ginny." -ForegroundColor DarkGray
-        return
-    }
-
-    Write-Host "`nInstalled packages:" -ForegroundColor Green
-    foreach ($dir in $dirs) {
-        Write-Host " - $($dir.Name)" -ForegroundColor White
-    }
-}
-
-function Show-GinnyHelp {
-    $helpText = @"
-Ginny - PowerShell package wizard
----------------------------------
-Commands:
- ginny install <name>    -> install a package
- ginny update  <name>    -> update a package
- ginny uninstall <name>  -> remove a package
- ginny list              -> list installed packages
- ginny help              -> show this help screen
----------------------------------
-"@
-    Write-Host $helpText -ForegroundColor Magenta
-}
-
-# ✨ Główna funkcja - alias: ginny
 function ginny {
     param (
         [Parameter(Position = 0, Mandatory = $true)]
@@ -96,11 +41,44 @@ function ginny {
     )
 
     switch ($Command.ToLower()) {
-        'install'   { Install-GinnyPackage -Name $Arg }
-        'update'    { Update-GinnyPackage -Name $Arg }
-        'uninstall' { Uninstall-GinnyPackage -Name $Arg }
-        'list'      { List-GinnyPackages }
-        'help'      { Show-GinnyHelp }
-        default     { Write-Error "Unknown command: $Command`nUse: ginny help" }
+        'install'   { Install-GinnyPackage -Url $Arg }
+        'update'    { Write-Host "Komenda update jest obecnie nieobsługiwana." -ForegroundColor Yellow }
+        'uninstall' { 
+            $modulePath = Join-Path $GinnyModulesPath $Arg
+            if (Test-Path $modulePath) {
+                Remove-Item -Recurse -Force $modulePath
+                Write-Host "Moduł '$Arg' odinstalowany." -ForegroundColor Red
+            } else {
+                Write-Error "Moduł '$Arg' nie jest zainstalowany."
+            }
+        }
+        'list'      { 
+            if (-not (Test-Path $GinnyModulesPath)) {
+                Write-Host "Brak zainstalowanych modułów." -ForegroundColor DarkGray
+                return
+            }
+            $dirs = Get-ChildItem -Directory -Path $GinnyModulesPath
+            if ($dirs.Count -eq 0) {
+                Write-Host "Brak zainstalowanych modułów." -ForegroundColor DarkGray
+                return
+            }
+            Write-Host "Zainstalowane moduły:" -ForegroundColor Green
+            foreach ($dir in $dirs) {
+                Write-Host " - $($dir.Name)" -ForegroundColor White
+            }
+        }
+        'help'      {
+            Write-Host @"
+Ginny - PowerShell package wizard
+---------------------------------
+Commands:
+ ginny install <url>    -> install a module from URL (.psm1)
+ ginny uninstall <name> -> uninstall a module by name
+ ginny list             -> list installed modules
+ ginny help             -> show this help
+---------------------------------
+"@ -ForegroundColor Magenta
+        }
+        default { Write-Error "Nieznana komenda: $Command`nUżyj: ginny help" }
     }
 }
