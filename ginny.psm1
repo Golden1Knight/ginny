@@ -1,5 +1,5 @@
 $GinnyModulesPath = "$env:USERPROFILE\Documents\PowerShell\Modules"
-$GinnyIndexPath = ""https://raw.githubusercontent.com/Golden1Knight/ginny/main/modules/index.json"
+$GinnyIndexPath = "https://raw.githubusercontent.com/Golden1Knight/ginny/main/modules/index.json"
 
 function Install-GinnyPackage {
     param ([Parameter(Mandatory)][string]$Name)
